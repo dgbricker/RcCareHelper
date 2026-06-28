@@ -1,0 +1,699 @@
+Version 5.4 - 6 Jun 2026
+<!-- This tool is for use by DAT members of the American Red cross -->
+<!-- The purpose is to help capture and standardize SA comments -->
+<!-- Concept created by Dave Bricker, Northwest Fl Chaper -->
+<!-- dgbricker@gmail.com -->
+<!-- HTML code generated using Google Gemini 3 Pro via precise input scipting -->
+<!-- Updates:
+    5.1 - Numerous verbiage and punctuation fixes and changes.
+        Header title change
+    5.2 - Verbiage Changes
+        - Updated to make more generic with regard to storms vs fire
+        - Added member injury or death
+        - Added event type
+    5.3 - minor verbiage updates and changes
+        - Added event type (select fire, tornado, hurricane, etc)
+        - Added injury or death question (with a note to notify duty officer)
+        - Made most inputs made more generic to the input. 
+            For example, rather than “Fire Damage to Roof” changed to “Damage to Roof” and let the added event type note what caused the damage. 
+            Not all selections were made generic as “Overhaul” remains associated with fire-fighting.
+    5.4 - Verbiage changes to ID confirmation types and selections
+        - Added client does not own transportation
+
+-->
+
+<!--
+All browser Security Issues: Browser will not allow deletion of file on phone/tablet.
+                            Each file is incremented unless manually deleting files.
+Android Specific problems: Will not copy to clipboard via HTML on a non secure connection or file.
+                           If you connect via localhost, then http will allow copy to clipboard
+                           Alternative is to write file, open, select all, copy
+ISO Specicfic Problems: IOS does not allow opening of file in browser
+                        Must use third party app; Goodreader is what I am using
+-->
+<!--
+I've implemented all the including:
+*   The American Red Cross theme.
+*   All questions with their respective answer options.
+*   The conditional logic for displaying follow-up questions based on previous selections.
+*   The revised "Damage Assessment Level" question, separating "Major Damage" and "Minor Damage" into distinct options as implied by the subsequent conditional questions.
+*   The new format for the "Referral Materials or Information" question, making it a direct multi-select with "None" as an option, no longer requiring a "Yes/No" initial selection.
+*   The functionality to save all visible responses into an `RCresp.txt` file (in UTF-8 format) and copy them to the clipboard when the "Copy to Clipboard" button is clicked.
+
+**Important Note on File Deletion:**
+Due to web browser security restrictions, an HTML file running in a browser cannot directly delete files on your local hard drive (like `RCresp.txt`). When you click "Save & Copy to Clipboard", your browser will download a new `RCresp.txt` file. If a file with that name already exists in your default download location, your browser will typically either:
+1.  Ask if you want to overwrite the existing file.
+2.  Save the new file with a slightly altered name (e.g., `RCresp (1).txt`).
+This behavior is normal for web browsers to prevent malicious scripts from arbitrarily deleting user data.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARC RC Care SA Helper</title>
+    <style>
+        /* American Red Cross inspired styling */
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0; /* Light grey background */
+            color: #333;
+            line-height: 1.6;
+        }
+        .header {
+            background-color: #BB2636; /* Red Cross Red */
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 5px solid #8B0000; /* Darker red accent */
+        }
+        .header img {
+            height: 60px; /* Adjust logo size */
+            vertical-align: middle;
+            margin-right: 15px;
+        }
+        .header h1 {
+            display: inline-block;
+            margin: 0;
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .question-group {
+            margin-bottom: 25px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background-color: #f9f9f9;
+        }
+        .question-group h3 {
+            margin-top: 0;
+            color: #BB2636;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        input[type="radio"], input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2); /* Slightly larger radio/checkbox */
+            vertical-align: middle;
+        }
+        button {
+            background-color: #BB2636;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #8B0000; /* Darker red on hover */
+        }
+        #reportOutput {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #e9e9e9;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            white-space: pre-wrap; /* Preserve formatting */
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.95em;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none; /* Hidden until generated */
+        }
+        #message {
+            margin-top: 15px;
+            color: green;
+            font-weight: bold;
+            display: none;
+        }
+        .actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+        .actions button {
+            margin-top: 0; /* Override default button margin */
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <!-- Placeholder for Red Cross Logo - you can replace this with an actual image URL -->
+        <!-- <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/American_Red_Cross_logo.svg/1200px-American_Red_Cross_logo.svg.png" alt="American Red Cross Logo"> -->
+        <h1>ARC RC Care SA Helper</h1>
+    </div>
+
+    <div class="container">
+        <form id="assessmentForm">
+
+            <!-- Question 1a: Valid ID -->
+            <div class="question-group">
+                <h3>Did the client present a valid ID?</h3>
+                <label><input type="radio" name="validId" value="Client presented valid ID with correct address."> Client presented valid ID with correct address.</label>
+                <label><input type="radio" name="validId" value="ID lost during event or alternate ID Methods Used:"> ID lost during event or alternate ID Methods Used (see Alternate ID Method).</label>
+                <label><input type="radio" name="validId" value="Responders unable to clearly determine client's ID or residence."> Responders unable to clearly determine client's ID or residence.</label>
+            </div>
+
+            <!-- Conditional Question: Alternate ID Methods -->
+            <div id="alternateIdMethods" class="question-group" style="display: none;">
+                <h3>Which alternate method(s) used for ID (select all that apply)?</h3>
+                <label><input type="checkbox" name="alternateId" value="Valid ID but can not confirm residence via alternate method."> Valid ID but can not confirm residence via alternate method.</label>
+                <label><input type="checkbox" name="alternateId" value="Valid ID and for residence used an alternate method:"> Valid ID and for residence used an alternate method:</label>
+                <label><input type="checkbox" name="alternateId" value="On scene Law Enforcement."> On scene Law Enforcement.</label>
+                <label><input type="checkbox" name="alternateId" value="On scene Fire Department."> On scene Fire Department.</label>
+                <label><input type="checkbox" name="alternateId" value="Bank or other financial statement."> Bank or other financial statement.</label>
+                <label><input type="checkbox" name="alternateId" value="Utility Bill or other of type documents."> Utility Bill or other of type documents.</label>
+                <label><input type="checkbox" name="alternateId" value="Car Registration/Insurance."> Car Registration/Insurance.</label>
+                <label><input type="checkbox" name="alternateId" value="Employer ID, School ID, or membership cards."> Employer ID, School ID, or membership cards.</label>
+                <label><input type="checkbox" name="alternateId" value="Birth certificate, passport, Social Security card, Medicare/insurance cards or voter card."> Birth certificate, passport, Social Security card, Medicare/insurance cards or voter card.</label>
+                <label><input type="checkbox" name="alternateId" value="Landlord or Facility Manager."> Landlord or Facility Manager.</label>
+                <label><input type="checkbox" name="alternateId" value="Other resident with ID"> Other resident with ID</label>
+                <label><input type="checkbox" name="alternateId" value="Neighbor"> Neighbor</label>
+            </div>
+
+              <!-- Question 1b: event type -->
+            <div class="question-group">
+                <h3>What is the type of event?</h3>
+                <label><input type="radio" name="typeEvent" value="Fire."> Fire.</label>
+                <label><input type="radio" name="typeEvent" value="Hurricane."> Hurricane.</label>
+                <label><input type="radio" name="typeEvent" value="Tornado."> Tornado.</label>
+                <label><input type="radio" name="typeEvent" value="Wild Fire."> Wild Fire.</label>
+                <label><input type="radio" name="typeEvent" value="Earthquake."> Earthquake.</label>
+                <label><input type="radio" name="typeEvent" value="Flood."> Flood.</label>
+                <label><input type="radio" name="typeEvent" value="Technological or industrial accident."> Technological or industrial accident.</label>
+                <label><input type="radio" name="typeEvent" value="Mass-casualty incident."> Mass-casualty incident.</label>
+                <label><input type="radio" name="typeEvent" value="Transportation disaster."> Transportation disaster.</label>
+                <label><input type="radio" name="typeEvent" value="Multiple types within this event."> Multiple types within this event.</label>
+                <label><input type="radio" name="typeEvent" value="Other."> Other.</label>
+            </div>
+
+
+          <!-- Question 2a: Lost members -->
+            <div class="question-group">
+                <h3>Did a resident or family member suffer severe injuries or death?</h3>
+                <label><input type="radio" name="injuredMember" value="Yes, there are injuries."> Yes, there are injuries.</label>
+                <label><input type="radio" name="injuredMember" value="Yes, there is death."> Yes, there is death and I informed the Duty Officer.</label>
+                <label><input type="radio" name="injuredMember" value="No reported injuries or death."> No reported injuries or death.</label>
+            </div>
+
+            <!-- Question 2b: Lost pets -->
+            <div class="question-group">
+                <h3>Did the client lose any pets during the event?</h3>
+                <label><input type="radio" name="lostPets" value="Yes"> Yes</label>
+                <label><input type="radio" name="lostPets" value="No"> No</label>
+            </div>
+
+            <!-- Question 3: Shelter tonight -->
+            <div class="question-group">
+                <h3>Where will the client shelter tonight or next few days?</h3>
+                <label><input type="radio" name="shelterTonight" value="Client anticipates seeking a hotel."> Client anticipates seeking a hotel.</label>
+                <label><input type="radio" name="shelterTonight" value="Client anticipates staying in home."> Client anticipates staying in home.</label>
+                <label><input type="radio" name="shelterTonight" value="Client's destination is too be determined."> Client's destination is too be determined.</label>
+                <label><input type="radio" name="shelterTonight" value="Client plans on staying with a friend."> Client plans on staying with a friend.</label>
+                <label><input type="radio" name="shelterTonight" value="Client plans on staying with a family member."> Client plans on staying with a family member.</label>
+                <label><input type="radio" name="shelterTonight" value="Client says they'll sleep in their vehicle."> Client says they'll sleep in their vehicle.</label>
+                <label><input type="radio" name="shelterTonight" value="Client says they'll sleep in their shed."> Client says they'll sleep in their shed.</label>
+                <label><input type="radio" name="shelterTonight" value="Client plans on camping outside."> Client plans on camping outside.</label>
+                <label><input type="radio" name="shelterTonight" value="Client will seek Mass Care shelter."> Client will seek Mass Care shelter.</label>
+            </div>
+
+            <!-- Question 4: Home Insurance -->
+            <div class="question-group">
+                <h3>Does the client have Home Insurance?</h3>
+                <label><input type="radio" name="homeInsurance" value="No Home Owner's Insurance."> No Home Owner's Insurance.</label>
+                <label><input type="radio" name="homeInsurance" value="Client has Home Owner's Insurance and in contact with their agent."> Client has Home Owner's Insurance and in contact with their agent.</label>
+                <label><input type="radio" name="homeInsurance" value="Client has Home Owner's Insurance."> Client has Home Owner's Insurance.</label>
+                <label><input type="radio" name="homeInsurance" value="Client does not have Renter's Insurance."> Client does not have Renter's Insurance.</label>
+                <label><input type="radio" name="homeInsurance" value="Client has Renter's Insurance."> Client has Renter's Insurance.</label>
+                <label><input type="radio" name="homeInsurance" value="Client's Insurance status is unknown."> Client's Insurance status is unknown.</label>
+                <label><input type="radio" name="homeInsurance" value="Home Owner Insurance status is N/A."> Home Owner Insurance status is N/A.</label>
+            </div>
+
+            <!-- Question 5: Flood Insurance -->
+            <div class="question-group">
+                <h3>Does the client have Flood Insurance?</h3>
+                <label><input type="radio" name="floodInsurance" value="Client does not have Flood Insurance."> Client does not have Flood Insurance.</label>
+                <label><input type="radio" name="floodInsurance" value="Client has Flood Insurance."> Client has Flood Insurance.</label>
+                <label><input type="radio" name="floodInsurance" value="Client's Flood Insurance status is unknown."> Client's Flood Insurance status is unknown.</label>
+                <label><input type="radio" name="floodInsurance" value="Flood Insurance status is N/A."> Flood Insurance status is N/A.</label>
+            </div>
+
+            <!-- Question 6: Phone Status -->
+            <div class="question-group">
+                <h3>What is the status of the client's phone?</h3>
+                <label><input type="radio" name="phoneStatus" value="The Client has an operable smartphone with internet, email and text."> The Client has an operable smartphone with internet, email and text.</label>
+                <label><input type="radio" name="phoneStatus" value="The Client has an operable smartphone but no internet or email."> The Client has an operable smartphone but no internet or email.</label>
+                <label><input type="radio" name="phoneStatus" value="The Client's phone destroyed in the event."> The Client's phone destroyed in the event.</label>
+                <label><input type="radio" name="phoneStatus" value="The Client does not use smartphone."> The Client does not use smartphone.</label>
+                <label><input type="radio" name="phoneStatus" value="The Client can't find their smart phone."> The Client can't find their smart phone.</label>
+            </div>
+
+            <!-- Question 7: Vehicle Status -->
+            <div class="question-group">
+                <h3>What is the status of the Client's vehicle?</h3>
+                <label><input type="radio" name="vehicleStatus" value="The Client has an operable automobile or transportation."> The Client has an operable automobile or transportation.</label>
+                <label><input type="radio" name="vehicleStatus" value="The Client's transportation damaged during event and no alternative."> The Client's transportation damaged during event and no alternative.</label>
+                <label><input type="radio" name="vehicleStatus" value="The Client's transportation damaged during event, but has an alternative."> The Client's transportation damaged during event, but has an alternative.</label>
+                <label><input type="radio" name="vehicleStatus" value="Client does not have or own transportation."> Client does not have or own transportation.</label>
+            </div>
+
+            <!-- Question 8: Type of dwelling -->
+            <div class="question-group">
+                <h3>Type of dwelling?</h3>
+                <label><input type="radio" name="dwellingType" value="Single Family Home."> Single Family Home.</label>
+                <label><input type="radio" name="dwellingType" value="Manufactured or Mobile Home."> Manufactured or Mobile Home.</label>
+                <label><input type="radio" name="dwellingType" value="Apartment"> Apartment</label>
+            </div>
+
+            <!-- Question 9: Damage Assessment Level -->
+            <div class="question-group">
+                <h3>Damage Assessment Level?</h3>
+                <label><input type="radio" name="damageAssessment" value="Destroyed (Home is Total Loss)"> Destroyed (Home is Total Loss).</label>
+                <label><input type="radio" name="damageAssessment" value="Major Damage (Structural Damage or other that requires significant structural repairs)"> Major Damage (Structural Damage or other that requires significant structural repairs).</label>
+                <label><input type="radio" name="damageAssessment" value="Minor Damage (Home with repairable non-structural damage)"> Minor Damage (Home with repairable non-structural damage).</label>
+                <label><input type="radio" name="damageAssessment" value="Affected (Damage is mostly cosmetic)"> Affected (Damage is mostly cosmetic).</label>
+                <label><input type="radio" name="damageAssessment" value="Uninhabitable"> Uninhabitable</label>
+            </div>
+
+            <!-- Conditional Questions for Damage Assessment -->
+            <div id="destroyedSFF_Apartment" class="question-group" style="display: none;">
+                <h3>What factors determined Destroyed for SFF or Apartment damage (select all that apply)?</h3>
+                <label><input type="checkbox" name="destroyedFactorsSFF_Apt" value="Damage to two or more major structural components."> Damage to two or more major structural components.</label>
+                <label><input type="checkbox" name="destroyedFactorsSFF_Apt" value="Collapse of walls."> Collapse of walls.</label>
+                <label><input type="checkbox" name="destroyedFactorsSFF_Apt" value="Collapse of foundation."> Collapse of foundation.</label>
+                <label><input type="checkbox" name="destroyedFactorsSFF_Apt" value="Collapse of roof."> Collapse of roof.</label>
+            </div>
+
+            <div id="destroyedMobileHome" class="question-group" style="display: none;">
+                <h3>What factors determined Destroyed for Mobile Home damage (select all that apply)?</h3>
+                <label><input type="checkbox" name="destroyedFactorsMobile" value="Only foundation or pads remain."> Only foundation or pads remain.</label>
+                <label><input type="checkbox" name="destroyedFactorsMobile" value="Majority of the structural framing of the roof has been compromised and exposing the interior."> Majority of the structural framing of the roof has been compromised and exposing the interior.</label>
+                <label><input type="checkbox" name="destroyedFactorsMobile" value="Frame is bent, twisted or otherwise compromised."> Frame is bent, twisted or otherwise compromised.</label>
+            </div>
+
+            <div id="majorSFF_Apartment" class="question-group" style="display: none;">
+                <h3>What factors determined Major for SFF or Apartment damage (select all that apply)?</h3>
+                <label><input type="checkbox" name="majorFactorsSFF_Apt" value="Damage to wall(s) involving essential living space."> Damage to wall(s) involving essential living space.</label>
+                <label><input type="checkbox" name="majorFactorsSFF_Apt" value="Damage to roof over essential living space."> Damage to roof over essential living space.</label>
+                <label><input type="checkbox" name="majorFactorsSFF_Apt" value="Damage to ceilings over essential living space."> Damage to ceilings over essential living space.</label>
+                <label><input type="checkbox" name="majorFactorsSFF_Apt" value="Damage to home's essential electrical/utilities."> Damage to home's essential electrical/utilities.</label>
+                <label><input type="checkbox" name="majorFactorsSFF_Apt" value="Water damage to residence from the event."> Water damage to residence from the event.</label>
+                <label><input type="checkbox" name="majorFactorsSFF_Apt" value="Over-haul damage to residence from fire-fighting."> Over-haul damage to residence from fire-fighting.</label>
+            </div>
+
+            <div id="majorMobileHome" class="question-group" style="display: none;">
+                <h3>What factors determined Major for Mobile Home damage (select all that apply)?</h3>
+                <label><input type="checkbox" name="majorFactorsMobile" value="Failure/partial failure of roof over essential living space."> Failure/partial failure of roof over essential living space.</label>
+                <label><input type="checkbox" name="majorFactorsMobile" value="Significant damage to residence from fire-fighting or storm water."> Significant damage to residence from fire-fighting or storm water.</label>
+                <label><input type="checkbox" name="majorFactorsMobile" value="Significant damage to residence from over-haul from fire-fighting."> Significant damage to residence from over-haul from fire-fighting.</label>
+                <label><input type="checkbox" name="majorFactorsMobile" value="Home is displaced from foundation/block/piers and other structural."> Home is displaced from foundation/block/piers and other structural.</label>
+            </div>
+
+            <div id="minorAssessment" class="question-group" style="display: none;">
+                <h3>What factors determined Minor assessment (select all that apply)?</h3>
+                <label><input type="checkbox" name="minorFactors" value="Evidence of smoke or water that does not prevent the client from returning to the home."> Evidence of smoke or water that does not prevent the client from returning to the home.</label>
+                <label><input type="checkbox" name="minorFactors" value="Nonstructural/not extensive damage to exterior that does not affect the ability to remain in the home."> Nonstructural/not extensive damage to exterior that does not affect the ability to remain in the home.</label>
+                <label><input type="checkbox" name="minorFactors" value="Damage to ceilings over essential living space."> Damage to ceilings over essential living space.</label>
+                <label><input type="checkbox" name="minorFactors" value="Disaster damage limited to mechanical components (furnace, boiler, water heater, HVAC, etc.)."> Disaster damage limited to mechanical components (furnace, boiler, water heater, HVAC, etc.).</label>
+                <label><input type="checkbox" name="minorFactors" value="Waterline at 1-3 inches in an essential living space."> Waterline at 1-3 inches in an essential living space.</label>
+                <label><input type="checkbox" name="minorFactors" value="Any waterline in a finished basement."> Any waterline in a finished basement.</label>
+            </div>
+
+            <div id="affectedAssessment" class="question-group" style="display: none;">
+                <h3>What factors determined Affected assessment (select all that apply)?</h3>
+                <label><input type="checkbox" name="affectedFactors" value="Client can remain in the home."> Client can remain in the home.</label>
+                <label><input type="checkbox" name="affectedFactors" value="Damage to non-essential living space or attached structure (e.g., porch, carport, garage, gutters)."> Damage to non-essential living space or attached structure (e.g., porch, carport, garage, gutters).</label>
+                <label><input type="checkbox" name="affectedFactors" value="Cosmetic damage only only (paint discolored, loose siding, or impacted)."> Cosmetic damage only only (paint discolored, loose siding, or impacted).</label>
+                <label><input type="checkbox" name="affectedFactors" value="No visible damage."> No visible damage.</label>
+            </div>
+
+            <div id="uninhabitableAssessment" class="question-group" style="display: none;">
+                <h3>What factors determined "Uninhabitable" assessment (select all that apply)?</h3>
+                <label><input type="checkbox" name="uninhabitableFactors" value="Client cannot reside in their home post-disaster for the next 48 hours or longer."> Client cannot reside in their home post-disaster for the next 48 hours or longer.</label>
+                <label><input type="checkbox" name="uninhabitableFactors" value="Unsafe infrastructure."> Unsafe infrastructure.</label>
+                <label><input type="checkbox" name="uninhabitableFactors" value="Identified as not suitable or dangerous to live in."> Identified as not suitable or dangerous to live in.</label>
+                <label><input type="checkbox" name="uninhabitableFactors" value="Fire department/emergency officials turned off power."> Fire department/emergency officials turned off power.</label>
+                <label><input type="checkbox" name="uninhabitableFactors" value="Dangerous buildings/structures code inspection been ordered."> Dangerous buildings/structures code inspection been ordered.</label>
+                <label><input type="checkbox" name="uninhabitableFactors" value="Safe access to the residence is blocked."> Safe access to the residence is blocked.</label>
+            </div>
+
+            <!-- Question 10: Medical or Mental Health Services -->
+            <div class="question-group">
+                <h3>Did the Client request Medical or Mental Health Services?</h3>
+                <label><input type="radio" name="medicalServices" value="Yes"> Yes</label>
+                <label><input type="radio" name="medicalServices" value="No"> No</label>
+            </div>
+
+            <!-- Conditional Question: Medical/Mental Health Needs -->
+            <div id="medicalNeeds" class="question-group" style="display: none;">
+                <h3>In generic terms, what drives the need for Medical or Mental Health Services (select all that apply)?</h3>
+                <label><input type="checkbox" name="medicalNeedsFactors" value="Inhaled smoke or toxic fumes."> Inhaled smoke or toxic fumes.</label>
+                <label><input type="checkbox" name="medicalNeedsFactors" value="Minor burns or other injuries."> Minor burns or other injuries.</label>
+                <label><input type="checkbox" name="medicalNeedsFactors" value="Vaccines or infection prevention needed due to injuries."> Vaccines or infection prevention needed due to injuries.</label>
+                <label><input type="checkbox" name="medicalNeedsFactors" value="Stress and shock with noticeable behavior change."> Stress and shock with noticeable behavior change.</label>
+                <label><input type="checkbox" name="medicalNeedsFactors" value="Possible anxiety, panic attack, or depression."> Possible anxiety, panic attack, or depression.</label>
+                <label><input type="checkbox" name="medicalNeedsFactors" value="Medication refills lost during event."> Medication refills lost during event.</label>
+                <label><input type="checkbox" name="medicalNeedsFactors" value="Prescription Glasses lost during event."> Prescription Glasses lost during event.</label>
+                <label><input type="checkbox" name="medicalNeedsFactors" value="Dentures lost during event."> Dentures lost during event.</label>
+                <label><input type="checkbox" name="medicalNeedsFactors" value="Oxygen or other medical equipment services needed."> Oxygen or other medical equipment services needed.</label>
+                <label><input type="checkbox" name="medicalNeedsFactors" value="Client or members of family disabled and needs assistance."> Client or members of family disabled and needs assistance.</label>
+                <label><input type="checkbox" name="medicalNeedsFactors" value="Client or members experiencing sleep problems or nightmares."> Client or members experiencing sleep problems or nightmares.</label>
+                <label><input type="checkbox" name="medicalNeedsFactors" value="Client or members feel overwhelmed, helpless or out of control."> Client or members feel overwhelmed, helpless or out of control.</label>
+                <label><input type="checkbox" name="medicalNeedsFactors" value="Extreme grief, anger or guilt about the event."> Extreme grief, anger or guilt about the event.</label>
+                <label><input type="checkbox" name="medicalNeedsFactors" value="Client or members experiencing anger, irritability or relationship strain."> Client or members experiencing anger, irritability or relationship strain.</label>
+                <label><input type="checkbox" name="medicalNeedsFactors" value="Pre-existing mental health issues worsening post fire event."> Pre-existing mental health issues worsening post fire event.</label>
+                <label><input type="checkbox" name="medicalNeedsFactors" value="Other unspecified reasons."> Other unspecified reasons</label>
+            </div>
+
+            <!-- Question 11: Spiritual Services -->
+            <div class="question-group">
+                <h3>Did the Client request Spiritual Services?</h3>
+                <label><input type="radio" name="spiritualServices" value="Yes"> Yes</label>
+                <label><input type="radio" name="spiritualServices" value="No"> No</label>
+            </div>
+
+            <!-- Conditional Question: Spiritual Needs -->
+            <div id="spiritualNeeds" class="question-group" style="display: none;">
+                <h3>In generic terms, what drives the need for Spiritual Services (select all that apply)?</h3>
+                <label><input type="checkbox" name="spiritualNeedsFactors" value="Client is new to the area or not established with a local faith group and wishes to participate."> Client is new to the area or not established with a local faith group and wishes to participate.</label>
+                <label><input type="checkbox" name="spiritualNeedsFactors" value="Loss of family member."> Loss of family member.</label>
+                <label><input type="checkbox" name="spiritualNeedsFactors" value="Loss of pet."> Loss of pet.</label>
+                <label><input type="checkbox" name="spiritualNeedsFactors" value="Client feels alone and has no support structure."> Client feels alone and has no support structure.</label>
+                <label><input type="checkbox" name="spiritualNeedsFactors" value="Client questioning the meaning or purpose after such a loss."> Client questioning the meaning or purpose after such a loss.</label>
+                <label><input type="checkbox" name="spiritualNeedsFactors" value="Client needs comfort and hope because of this crisis."> Client needs comfort and hope because of this crisis.</label>
+                <label><input type="checkbox" name="spiritualNeedsFactors" value="Extreme grief, anger or guilt about the event."> Extreme grief, anger or guilt about the event.</label>
+                <label><input type="checkbox" name="spiritualNeedsFactors" value="Client has difficult decisions to make."> Client has difficult decisions to make.</label>
+                <label><input type="checkbox" name="spiritualNeedsFactors" value="Spiritual items lost in fire (e.g., bible, prayer rug, etc.)"> Spiritual items lost in fire (e.g., bible, prayer rug, etc.)</label>
+            </div>
+
+            <!-- Question 12: Referral materials -->
+            <div class="question-group">
+                <h3>Which referral materials or information did you provide to the client (select all that apply)?</h3>
+                <label><input type="checkbox" name="referralMaterials" value="Provided Chapter's resource folder."> Provided Chapter's resource folder.</label>
+                <label><input type="checkbox" name="referralMaterials" value="Provided 1 800-Red-Cross (800-733-2767) number."> Provided 1 800-Red-Cross (800-733-2767) number.</label>
+                <label><input type="checkbox" name="referralMaterials" value="Described 211 booklet (from folder), 211.org website, and Dial 2-1-1."> Described 211 booklet (from folder), 211.org website, and Dial 2-1-1.</label>
+                <label><input type="checkbox" name="referralMaterials" value="Described findhelp.org website."> Described findhelp.org website.</label>
+                <label><input type="checkbox" name="referralMaterials" value="Recommended Salvation Army etc."> Recommended Salvation Army etc.</label>
+                <label><input type="checkbox" name="referralMaterials" value="Provided Disaster Distress Helpline: 1-800-985-5990 or text “TalkWithUs” to 66746 (crisis counseling)."> Provided Disaster Distress Helpline: 1-800-985-5990 or text “TalkWithUs” to 66746 (crisis counseling).</label>
+                <label><input type="checkbox" name="referralMaterials" value="Other"> Other</label>
+                <label><input type="checkbox" name="referralMaterials" value="None"> None</label>
+            </div>
+
+            <div class="actions">
+                <button type="button" onclick="generateAndDisplayReport()">Generate Report</button>
+                <button type="button" onclick="copyReportToClipboard()">Copy to Clipboard</button>
+                <button type="button" onclick="downloadReport()">Download RCresp.txt</button>
+            </div>
+
+            <pre id="reportOutput"></pre>
+            <p id="message" role="alert"></p>
+
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('assessmentForm');
+
+            // --- Event Listeners for Conditional Questions ---
+
+            // Valid ID
+            form.querySelectorAll('input[name="validId"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const alternateIdMethodsDiv = document.getElementById('alternateIdMethods');
+                    if (this.value.includes('alternate')) {
+                        alternateIdMethodsDiv.style.display = 'block';
+                    } else {
+                        alternateIdMethodsDiv.style.display = 'none';
+                        // Clear selections if hidden
+                        alternateIdMethodsDiv.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    }
+                });
+            });
+
+            // Damage Assessment Level & Type of Dwelling
+            const damageAssessmentRadios = form.querySelectorAll('input[name="damageAssessment"]');
+            const dwellingTypeRadios = form.querySelectorAll('input[name="dwellingType"]');
+
+            function updateDamageConditionals() {
+                const selectedDamage = form.querySelector('input[name="damageAssessment"]:checked')?.value || '';
+                const selectedDwelling = form.querySelector('input[name="dwellingType"]:checked')?.value || '';
+
+                // Hide all damage assessment conditionals first
+                document.getElementById('destroyedSFF_Apartment').style.display = 'none';
+                document.getElementById('destroyedMobileHome').style.display = 'none';
+                document.getElementById('majorSFF_Apartment').style.display = 'none';
+                document.getElementById('majorMobileHome').style.display = 'none';
+                document.getElementById('minorAssessment').style.display = 'none';
+                document.getElementById('affectedAssessment').style.display = 'none';
+                document.getElementById('uninhabitableAssessment').style.display = 'none';
+
+                // Clear checkboxes in hidden sections to prevent stale data
+                document.querySelectorAll('.question-group[id^="destroyed"], .question-group[id^="major"], #minorAssessment, #affectedAssessment, #uninhabitableAssessment').forEach(div => {
+                    div.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                });
+
+
+                if (selectedDamage.includes('Destroyed')) {
+                    if (selectedDwelling.includes('Single') || selectedDwelling.includes('Apartment')) {
+                        document.getElementById('destroyedSFF_Apartment').style.display = 'block';
+                    } else if (selectedDwelling.includes('Mobile')) {
+                        document.getElementById('destroyedMobileHome').style.display = 'block';
+                    }
+                } else if (selectedDamage.includes('Major')) {
+                    if (selectedDwelling.includes('Single') || selectedDwelling.includes('Apartment')) {
+                        document.getElementById('majorSFF_Apartment').style.display = 'block';
+                    } else if (selectedDwelling.includes('Mobile')) {
+                        document.getElementById('majorMobileHome').style.display = 'block';
+                    }
+                } else if (selectedDamage.includes('Minor')) {
+                    document.getElementById('minorAssessment').style.display = 'block';
+                } else if (selectedDamage.includes('Affected')) {
+                    document.getElementById('affectedAssessment').style.display = 'block';
+                } else if (selectedDamage.includes('Uninhabitable')) {
+                    document.getElementById('uninhabitableAssessment').style.display = 'block';
+                }
+            }
+
+            damageAssessmentRadios.forEach(radio => radio.addEventListener('change', updateDamageConditionals));
+            dwellingTypeRadios.forEach(radio => radio.addEventListener('change', updateDamageConditionals));
+
+
+            // Medical Services
+            form.querySelectorAll('input[name="medicalServices"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const medicalNeedsDiv = document.getElementById('medicalNeeds');
+                    if (this.value === 'Yes') {
+                        medicalNeedsDiv.style.display = 'block';
+                    } else {
+                        medicalNeedsDiv.style.display = 'none';
+                        medicalNeedsDiv.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    }
+                });
+            });
+
+            // Spiritual Services
+            form.querySelectorAll('input[name="spiritualServices"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const spiritualNeedsDiv = document.getElementById('spiritualNeeds');
+                    if (this.value === 'Yes') {
+                        spiritualNeedsDiv.style.display = 'block';
+                    } else {
+                        spiritualNeedsDiv.style.display = 'none';
+                        spiritualNeedsDiv.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    }
+                });
+            });
+        });
+
+        // --- Report Generation Functions ---
+
+        function getQuestionText(inputName) {
+            const el = document.querySelector(`input[name="${inputName}"]`);
+            if (el) {
+                // Find the closest h3 for the question text
+                const parentGroup = el.closest('.question-group');
+                return parentGroup ? parentGroup.querySelector('h3')?.textContent.trim() : inputName;
+            }
+            // For checkbox groups, use the first checkbox as a reference to find the H3
+            const checkboxEl = document.querySelector(`input[name="${inputName}"][type="checkbox"]`);
+            if (checkboxEl) {
+                const parentGroup = checkboxEl.closest('.question-group');
+                return parentGroup ? parentGroup.querySelector('h3')?.textContent.trim() : inputName;
+            }
+            return inputName; // Fallback
+        }
+
+        function generateReport() {
+            const form = document.getElementById('assessmentForm');
+            let report = "";
+
+            // Helper to get selected radio value
+            const getRadioValue = (name) => {
+                const checked = form.querySelector(`input[name="${name}"]:checked`);
+                return checked ? checked.value : 'No response';
+            };
+
+            // Helper to get selected checkbox values
+            const getCheckboxValues = (name) => {
+                const checked = Array.from(form.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
+                return checked.length > 0 ? checked.join('; ') : 'No selection';
+            };
+
+            const appendQuestionAnswer = (questionName, answer) => {
+                report += `${questionName}\nAnswer: ${answer}\n\n`;
+            };
+
+            // 1a. Valid ID
+            let q1Text = getQuestionText('validId');
+            let q1Answer = getRadioValue('validId');
+            appendQuestionAnswer(q1Text, q1Answer);
+
+            // Conditional: Alternate ID Methods
+            if (q1Answer.includes('alternate')) {
+                let q1_1Text = getQuestionText('alternateId');
+                appendQuestionAnswer(q1_1Text, getCheckboxValues('alternateId'));
+            }
+
+            // 1b. Event Type
+            appendQuestionAnswer(getQuestionText('typeEvent'), getRadioValue('typeEvent'));
+
+            // 2. Lost Pets
+            appendQuestionAnswer(getQuestionText('injuredMember'), getRadioValue('injuredMember'));
+            appendQuestionAnswer(getQuestionText('lostPets'), getRadioValue('lostPets'));
+
+            // 3. Shelter Tonight
+            appendQuestionAnswer(getQuestionText('shelterTonight'), getRadioValue('shelterTonight'));
+
+            // 4. Home Insurance
+            appendQuestionAnswer(getQuestionText('homeInsurance'), getRadioValue('homeInsurance'));
+
+            // 5. Flood Insurance
+            appendQuestionAnswer(getQuestionText('floodInsurance'), getRadioValue('floodInsurance'));
+
+            // 6. Phone Status
+            appendQuestionAnswer(getQuestionText('phoneStatus'), getRadioValue('phoneStatus'));
+
+            // 7. Vehicle Status
+            appendQuestionAnswer(getQuestionText('vehicleStatus'), getRadioValue('vehicleStatus'));
+
+            // 8. Type of dwelling
+            let dwellingType = getRadioValue('dwellingType');
+            appendQuestionAnswer(getQuestionText('dwellingType'), dwellingType);
+
+            // 9. Damage Assessment Level
+            let damageAssessment = getRadioValue('damageAssessment');
+            appendQuestionAnswer(getQuestionText('damageAssessment'), damageAssessment);
+
+            // Conditional Damage Assessment Questions
+            if (damageAssessment.includes('Destroyed')) {
+                if (dwellingType.includes('Single') || dwellingType.includes('Apartment')) {
+                    appendQuestionAnswer(getQuestionText('destroyedFactorsSFF_Apt'), getCheckboxValues('destroyedFactorsSFF_Apt'));
+                } else if (dwellingType.includes('Mobile')) {
+                    appendQuestionAnswer(getQuestionText('destroyedFactorsMobile'), getCheckboxValues('destroyedFactorsMobile'));
+                }
+            } else if (damageAssessment.includes('Major')) {
+                if (dwellingType.includes('Single') || dwellingType.includes('Apartment')) {
+                    appendQuestionAnswer(getQuestionText('majorFactorsSFF_Apt'), getCheckboxValues('majorFactorsSFF_Apt'));
+                } else if (dwellingType.includes('Mobile')) {
+                    appendQuestionAnswer(getQuestionText('majorFactorsMobile'), getCheckboxValues('majorFactorsMobile'));
+                }
+            } else if (damageAssessment.includes('Minor')) {
+                appendQuestionAnswer(getQuestionText('minorFactors'), getCheckboxValues('minorFactors'));
+            } else if (damageAssessment.includes('Affected')) {
+                appendQuestionAnswer(getQuestionText('affectedFactors'), getCheckboxValues('affectedFactors'));
+            } else if (damageAssessment.includes('Uninhabitable')) {
+                appendQuestionAnswer(getQuestionText('uninhabitableFactors'), getCheckboxValues('uninhabitableFactors'));
+            }
+
+            // 10. Medical or Mental Health Services
+            let medicalServices = getRadioValue('medicalServices');
+            appendQuestionAnswer(getQuestionText('medicalServices'), medicalServices);
+
+            // Conditional: Medical Needs Factors
+            if (medicalServices === 'Yes') {
+                appendQuestionAnswer(getQuestionText('medicalNeedsFactors'), getCheckboxValues('medicalNeedsFactors'));
+            }
+
+            // 11. Spiritual Services
+            let spiritualServices = getRadioValue('spiritualServices');
+            appendQuestionAnswer(getQuestionText('spiritualServices'), spiritualServices);
+
+            // Conditional: Spiritual Needs Factors
+            if (spiritualServices === 'Yes') {
+                appendQuestionAnswer(getQuestionText('spiritualNeedsFactors'), getCheckboxValues('spiritualNeedsFactors'));
+            }
+
+            // 12. Referral materials
+            appendQuestionAnswer(getQuestionText('referralMaterials'), getCheckboxValues('referralMaterials'));
+
+            return report;
+        }
+
+        function generateAndDisplayReport() {
+            const reportText = generateReport();
+            const reportOutput = document.getElementById('reportOutput');
+            reportOutput.textContent = reportText;
+            reportOutput.style.display = 'block'; // Show the output area
+            document.getElementById('message').style.display = 'none'; // Hide previous messages
+        }
+
+        function copyReportToClipboard() {
+            const reportText = generateReport();
+            navigator.clipboard.writeText(reportText)
+                .then(() => {
+                    showMessage('Report copied to clipboard!');
+                })
+                .catch(err => {
+                    console.error('Failed to copy report: ', err);
+                    showMessage('Failed to copy report. Please try again or download.', 'red');
+                });
+        }
+
+        function downloadReport() {
+            const reportText = generateReport();
+            const blob = new Blob([reportText], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'RCresp.txt';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href); // Clean up the object URL
+            showMessage('Report downloaded as RCresp.txt!');
+        }
+
+        function showMessage(msg, color = 'green') {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = msg;
+            messageEl.style.color = color;
+            messageEl.style.display = 'block';
+            // Hide message after a few seconds
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
